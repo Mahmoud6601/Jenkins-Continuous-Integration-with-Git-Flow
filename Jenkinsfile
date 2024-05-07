@@ -14,7 +14,7 @@ pipeline {
                         // Test tasks
                     } catch (Exception e) {
                         echo "Test failed, marking build as unstable"
-                        currentBuild.result = 'UNSTABLE'
+                        currentBuesult = 'UNSTABLE'
                         return
                     }
                 }
