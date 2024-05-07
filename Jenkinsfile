@@ -1,16 +1,19 @@
 pipeline {
     agent any
-
     stages {
+        stage('Setup') {
+            steps {
+                // Setup commands
+            }
+        }
         stage('Build') {
             steps {
-                // Put your build script here.
-                echo 'Building...'
+                // Build commands
             }
         }
         stage('Test') {
             steps {
-               script {
+                script {
                     try {
                         // Test commands
                     } catch (Exception e) {
@@ -21,8 +24,7 @@ pipeline {
         }
         stage('Deploy') {
             steps {
-                // Put your deployment script here.
-                echo 'Deploying...'
+                // Deploy commands
             }
         }
     }
