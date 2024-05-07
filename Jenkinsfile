@@ -10,13 +10,13 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                     try {
+                    try {
                         // Test tasks
                     } catch (Exception e) {
                         echo "Test failed, marking build as unstable"
                         currentBuild.result = 'UNSTABLE'
                         return
-
+                    }
                 }
         }
         stage('Deploy') {
