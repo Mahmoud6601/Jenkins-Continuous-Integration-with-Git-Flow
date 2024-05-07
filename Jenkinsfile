@@ -1,30 +1,30 @@
 pipeline {
     agent any
-
     stages {
+        stage('Setup') {
+            steps {
+                // Setup commands
+            }
+        }
         stage('Build') {
             steps {
-                // Put your build script here.
-                echo 'Building...'
+                // Build commands
             }
         }
         stage('Test') {
             steps {
                 script {
                     try {
-                        // Test tasks
+                        // Test commands
                     } catch (Exception e) {
-                        echo "Test failed, marking build as unstable"
                         currentBuild.result = 'UNSTABLE'
-                        return
                     }
                 }
             }
         }
         stage('Deploy') {
             steps {
-                // Put your deployment script here.
-                echo 'Deploying...'
+                // Deploy commands
             }
         }
     }
