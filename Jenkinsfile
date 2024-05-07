@@ -10,8 +10,6 @@ pipeline {
         }
         stage('Test') {
             steps {
-                // Put your test script here.
-                echo 'Testing...'
                 script {
                     try {
                         // Test tasks
