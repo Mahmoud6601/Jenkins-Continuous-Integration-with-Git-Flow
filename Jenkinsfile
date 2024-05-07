@@ -1,24 +1,26 @@
 pipeline {
-    agent {label 'master'}     
-     stages {            
-        stage('A1') { 
-            agent {label 'Node1'} 
+    agent any
+
+    stages {
+        stage('Build') {
             steps {
-                sh 'binA'
+                echo 'Building...'
             }
         }
-        stage('A2') {
-            agent {label 'Node1'}
+        stage('Test') {
             steps {
-                sh 'binB' // If this bin fails, all following stages are skipped
-            }
+                script {
+                    try {
+                        // Test commands
+                    } catch (Exception e) {
+                        currentBuild.result = 'UNSTABLE'
+                    }
+                }
         }
-// ...        
-        stage('C3'){
-            agent {label 'Node3'}
+        stage('Deploy') {
             steps {
-                sh 'binC'
+                echo 'Deploying...'
             }
-        }
-    }
+        }
+    }
 }
