@@ -12,6 +12,15 @@ pipeline {
             steps {
                 // Put your test script here.
                 echo 'Testing...'
+                script {
+                    try {
+                        // Test tasks
+                    } catch (Exception e) {
+                        echo "Test failed, marking build as unstable"
+                        currentBuild.result = 'UNSTABLE'
+                        return
+                    }
+                }
             }
         }
         stage('Deploy') {
