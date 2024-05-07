@@ -15,9 +15,11 @@ pipeline {
             steps {
                 script {
                     try {
-                        // Test commands
+                        // Test tasks
                     } catch (Exception e) {
+                        echo "Test failed, marking build as unstable"
                         currentBuild.result = 'UNSTABLE'
+                        return
                     }
                 }
             }
