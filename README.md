@@ -1,4 +1,4 @@
-# Project Title
+# Jenkins-Continuous-Integration-with-Git-Flow
 
 This project uses Jenkins to automatically build and test code changes from this GitHub repository using a Jenkinsfile. The Git Flow branching model is applied to manage the development process.
 
