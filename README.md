@@ -1,4 +1,4 @@
-# Jenkins Continuous Integration with Git Flow — JCasC & Enterprise CI/CD Platform
+# jenkins-gitflow-platform — JCasC & Enterprise Git Flow CI/CD Platform
 
 A production-grade, reproducible **Jenkins-as-Code (JCasC)** and **Git Flow CI/CD Platform** built with **Jenkins LTS (`2.479.3`)**, **Job DSL Multibranch Pipelines**, a unit-tested **Groovy Shared Library**, isolated **Docker Build Agents** (`numExecutors: 0` on controller), **Nginx TLS**, local **OCI Registry**, **Trivy + CycloneDX SBOM** supply-chain gates, **Prometheus/Grafana** observability, automated **Staging/Production** rollouts with **1-command rollback**, and **Jenkins controller backup/restore**.
 
@@ -94,8 +94,8 @@ flowchart TD
 
 ### Step 1 — Clone & Configure Fail-Fast Secrets
 ```bash
-git clone https://github.com/Mahmoud6601/Jenkins-Continuous-Integration-with-Git-Flow.git
-cd Jenkins-Continuous-Integration-with-Git-Flow
+git clone https://github.com/Mahmoud6601/jenkins-gitflow-platform.git
+cd jenkins-gitflow-platform
 cp .env.example .env
 # Edit .env and set strong values for JENKINS_ADMIN_PASSWORD, JENKINS_AGENT_SECRET, GITHUB_WEBHOOK_SECRET
 ```

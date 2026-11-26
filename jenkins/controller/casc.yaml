@@ -48,7 +48,7 @@ unclassified:
             libraryPath: "shared-library/"
             scm:
               git:
-                remote: "https://github.com/Mahmoud6601/Jenkins-Continuous-Integration-with-Git-Flow.git"
+                remote: "https://github.com/Mahmoud6601/jenkins-gitflow-platform.git"
 
 jobs:
   - file: /usr/local/share/jenkins/jobs_dsl/multibranch_gitflow.groovy

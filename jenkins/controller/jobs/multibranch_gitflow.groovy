@@ -5,7 +5,7 @@ multibranchPipelineJob('gitflow-ci-cd') {
     branchSources {
         git {
             id('gitflow-origin')
-            remote('https://github.com/Mahmoud6601/Jenkins-Continuous-Integration-with-Git-Flow.git')
+            remote('https://github.com/Mahmoud6601/jenkins-gitflow-platform.git')
             includes('main develop feature/* bugfix/* release/v* hotfix/v*')
         }
     }
