@@ -1,0 +1,54 @@
+jenkins:
+  systemMessage: "Jenkins Git Flow CI/CD Platform (Configured via JCasC — Controller Executors Disabled)"
+  numExecutors: 0
+  mode: EXCLUSIVE
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "${JENKINS_ADMIN_USER:-admin}"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+  authorizationStrategy:
+    globalMatrix:
+      entries:
+        - user:
+            name: "${JENKINS_ADMIN_USER:-admin}"
+            permissions:
+              - "Overall/Administer"
+        - group:
+            name: "authenticated"
+            permissions:
+              - "Overall/Read"
+              - "Job/Read"
+  nodes:
+    - permanent:
+        name: "docker-builder"
+        labelString: "docker-builder linux"
+        numExecutors: 2
+        remoteFS: "/home/jenkins/agent"
+        retentionStrategy: "always"
+        launcher:
+          inbound:
+            webSocket: true
+
+unclassified:
+  location:
+    url: "https://${APP_HOST:-localhost}/"
+  prometheusConfiguration:
+    path: "prometheus"
+    collectingMetricsPeriodInSeconds: 30
+    useAuthenticatedEndpoint: false
+  globalLibraries:
+    libraries:
+      - name: "gitflow-shared-lib"
+        defaultVersion: "main"
+        implicit: false
+        retriever:
+          modernSCM:
+            libraryPath: "shared-library/"
+            scm:
+              git:
+                remote: "https://github.com/Mahmoud6601/Jenkins-Continuous-Integration-with-Git-Flow.git"
+
+jobs:
+  - file: /usr/local/share/jenkins/jobs_dsl/multibranch_gitflow.groovy

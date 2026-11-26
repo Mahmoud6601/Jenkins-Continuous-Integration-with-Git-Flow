@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "jenkins"
+    metrics_path: "/prometheus"
+    static_configs:
+      - targets: ["jenkins-controller:8080"]
+
+  - job_name: "payload-staging"
+    static_configs:
+      - targets: ["payload-staging:8000"]
+
+  - job_name: "payload-prod"
+    static_configs:
+      - targets: ["payload-prod:8000"]

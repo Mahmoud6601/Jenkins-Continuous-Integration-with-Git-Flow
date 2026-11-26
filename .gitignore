@@ -1,0 +1,27 @@
+# Secrets & TLS
+.env
+.env.*
+!.env.example
+nginx/ssl/
+*.key
+*.pem
+*.crt
+
+# Runtime state & backups
+.state/
+backups/
+reports/
+sbom*.json
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+coverage.xml
+junit.xml
+
+# Gradle / Groovy
+shared-library/.gradle/
+shared-library/build/

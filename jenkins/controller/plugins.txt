@@ -1,0 +1,13 @@
+configuration-as-code
+job-dsl
+workflow-aggregator
+git
+github-branch-source
+junit
+credentials-binding
+timestamper
+ansicolor
+prometheus
+matrix-auth
+ws-cleanup
+pipeline-stage-view

@@ -1,0 +1,10 @@
+title = "Gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowlist Jenkins plugin version hashes in plugins.txt (not credentials)"
+paths = [
+  '''jenkins/controller/plugins\.txt'''
+]

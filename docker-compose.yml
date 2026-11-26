@@ -1,0 +1,121 @@
+services:
+  jenkins-controller:
+    build:
+      context: ./jenkins/controller
+    image: gitflow-jenkins-controller:local
+    restart: unless-stopped
+    environment:
+      JENKINS_ADMIN_USER: ${JENKINS_ADMIN_USER:-admin}
+      JENKINS_ADMIN_PASSWORD: ${JENKINS_ADMIN_PASSWORD:?Set JENKINS_ADMIN_PASSWORD in .env}
+      APP_HOST: ${APP_HOST:-localhost}
+    volumes:
+      - jenkins-home:/var/jenkins_home
+    networks:
+      - ci-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+
+  registry:
+    image: registry:2.8.3
+    restart: unless-stopped
+    volumes:
+      - registry-data:/var/lib/registry
+    networks:
+      - ci-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5000/v2/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  payload-staging:
+    build:
+      context: ./payload
+      args:
+        APP_VERSION: ${STAGING_IMAGE_TAG:-local-dev}
+        GIT_SHA: local-staging
+        GIT_BRANCH: develop
+    image: gitflow-payload:${STAGING_IMAGE_TAG:-local-dev}
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: staging
+      APP_VERSION: ${STAGING_IMAGE_TAG:-local-dev}
+    networks:
+      - ci-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  payload-prod:
+    build:
+      context: ./payload
+      args:
+        APP_VERSION: ${PROD_IMAGE_TAG:-local-dev}
+        GIT_SHA: local-prod
+        GIT_BRANCH: main
+    image: gitflow-payload:${PROD_IMAGE_TAG:-local-dev}
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: production
+      APP_VERSION: ${PROD_IMAGE_TAG:-local-dev}
+    networks:
+      - ci-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  nginx:
+    image: nginx:1.27.4-alpine
+    restart: unless-stopped
+    depends_on:
+      jenkins-controller:
+        condition: service_healthy
+      payload-staging:
+        condition: service_healthy
+      payload-prod:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      APP_HOST: ${APP_HOST:-localhost}
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    networks:
+      - ci-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  jenkins-home:
+  registry-data:
+
+networks:
+  ci-net:
+    driver: bridge

@@ -1,0 +1,18 @@
+{
+  "extends": "recommended-jenkinsfile",
+  "rules": {
+    "CompileStatic": "off",
+    "Indentation": {
+      "spacesPerIndentLevel": 4,
+      "severity": "warning"
+    },
+    "LineLength": {
+      "length": 140,
+      "severity": "warning"
+    },
+    "NestedBlockDepth": {
+      "maxNestedBlockDepth": 6,
+      "severity": "warning"
+    }
+  }
+}

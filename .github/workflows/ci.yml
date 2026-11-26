@@ -1,0 +1,145 @@
+name: Jenkins Git Flow Platform CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  secret-and-hygiene-scan:
+    name: Secret & Artifact Hygiene Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fail on tracked secrets or runtime state
+        run: |
+          set -euo pipefail
+          if git ls-files '.env' '.env.*' '*.key' '*.pem' '*.crt' 'nginx/ssl/*' 'backups/*' '.state/*' | grep -v '\.example$' | grep -q .; then
+            echo "ERROR: Tracked secret, TLS key, or backup artifact detected."
+            exit 1
+          fi
+      - name: Gitleaks Secret Scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  static-lint:
+    name: ShellCheck, Hadolint & Groovy Lint
+    needs: secret-and-hygiene-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lint shell scripts
+        run: shellcheck scripts/*.sh
+      - name: Lint Dockerfiles with Hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: jenkins/controller/Dockerfile
+      - name: Lint Agent Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: jenkins/agent/Dockerfile
+      - name: Lint Payload Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: payload/Dockerfile
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.18.1"
+      - name: Lint Groovy & Jenkinsfile
+        run: npx --yes npm-groovy-lint@15.0.0 --failon error Jenkinsfile shared-library/src shared-library/vars jenkins/controller/jobs
+
+  payload-tests:
+    name: Payload Verification Tests (Python 3.12)
+    needs: secret-and-hygiene-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run probe payload unit tests
+        run: python -m unittest discover -s payload/tests -v
+
+  shared-library-tests:
+    name: Shared Library Unit Tests (Gradle + JUnit 5)
+    needs: static-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+      - name: Run Shared Library Groovy unit tests
+        working-directory: shared-library
+        run: gradle test --no-daemon
+
+  build-scan-and-compose-e2e:
+    name: Docker Build, Trivy Scan & Live Jenkins Compose E2E
+    needs: [payload-tests, shared-library-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build Jenkins Controller image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./jenkins/controller
+          load: true
+          tags: gitflow-jenkins-controller:local
+          cache-from: type=gha,scope=jenkins-controller
+          cache-to: type=gha,mode=max,scope=jenkins-controller
+      - name: Build Payload image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./payload
+          load: true
+          tags: gitflow-payload:local-dev
+          cache-from: type=gha,scope=payload
+          cache-to: type=gha,mode=max,scope=payload
+      - name: Trivy OS scan Payload image (blocking)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: gitflow-payload:local-dev
+          vuln-type: os
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+      - name: Boot Jenkins + Registry + Payload + Nginx TLS Stack
+        run: |
+          set -euo pipefail
+          cat > .env <<EOF
+          JENKINS_ADMIN_USER=admin
+          JENKINS_ADMIN_PASSWORD=ci_jenkins_secret_password
+          JENKINS_AGENT_SECRET=ci_agent_secret_value
+          GITHUB_WEBHOOK_SECRET=ci_webhook_secret_value
+          REGISTRY_HOST=localhost:5000
+          STAGING_IMAGE_TAG=local-dev
+          PROD_IMAGE_TAG=local-dev
+          APP_HOST=localhost
+          EOF
+          bash ./scripts/generate-ssl.sh localhost
+          trap 'docker compose -f docker-compose.yml ps -a; docker compose -f docker-compose.yml logs --tail=200 --no-color; docker compose -f docker-compose.yml down -v' EXIT
+          docker compose -f docker-compose.yml up -d --no-build
+
+          for i in $(seq 1 40); do
+            if curl -kfsS https://localhost/healthz | grep -q "ok"; then
+              break
+            fi
+            if [ "$i" -eq 40 ]; then
+              echo "Timed out waiting for Nginx TLS /healthz"
+              exit 1
+            fi
+            sleep 3
+          done
+
+          curl -kfsS https://localhost/login >/dev/null
+          bash ./scripts/smoke-test.sh staging
+          bash ./scripts/smoke-test.sh production
